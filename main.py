@@ -47,7 +47,9 @@ async def get_task(id: int):
 
 @app.post("/tasks", status_code= status.HTTP_201_CREATED)
 async def create_task(task: UserTask):
-    task_id: int = len(total_tasks) + 1
+
+    last_task_id = total_tasks[-1].id
+    task_id: int = last_task_id + 1
     task_name = task.name
     done = task.done
 
@@ -55,6 +57,24 @@ async def create_task(task: UserTask):
                      name= task_name,
                      done= done)
     
-    total_tasks.append(user_task.model_dump())
+    total_tasks.append(user_task)
 
     return user_task
+
+@app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_task(id: int):
+    for i, task in enumerate(total_tasks):
+        if task.id == id:
+            total_tasks.pop(i)
+            return
+
+    raise HTTPException(status_code=404, detail= "Task not found")
+
+@app.put("/tasks/{id}")
+async def replace_task(id: int, task: Task):
+    for i, existing in enumerate(total_tasks):
+        if existing.id == id:
+            updated_task = Task(id=id, name=task.name, done=task.done)
+            total_tasks[i] = updated_task
+            return updated_task
+    raise HTTPException(status_code=404, detail="Task not found")
